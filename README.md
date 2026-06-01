@@ -21,6 +21,8 @@ curl -o ~/.claude/commands/insait-agent-json.md \
   https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/insait-agent-json.md
 curl -o ~/.claude/commands/summarize.md \
   https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/summarize.md
+curl -o ~/.claude/commands/feedback-browser.md \
+  https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/feedback-browser.md
 
 # Skills
 mkdir -p ~/.claude/skills
@@ -43,6 +45,7 @@ Commands go in `~/.claude/commands/`. Invoke with `/command-name`.
 | INSAIT Agent JSON | `/insait-agent-json` | Build or validate a Conversation Flow Agent JSON for the INSAIT platform. Pass a file path to fix, or describe an agent to build from scratch. Covers full schema, all node types, exits, variables, and every known import failure mode. |
 | INSAIT Test CSV | `/insait-test-csv` | Build or validate a Strict Replay test CSV for the INSAIT platform. Pass a file path to review, or describe the agent to generate test cases. |
 | Summarize | `/summarize` | Summarize the last N assistant messages in a session. Usage: `/summarize 5` or `/summarize 3 voice agent rules`. |
+| Feedback Browser | `/feedback-browser` | Build a filterable, expandable single-file HTML conversation browser from a pilot/QA feedback file (scores + rep feedback + QA comments + full transcripts). Usage: `/feedback-browser matched.md [analysis.md] [output.html]`. |
 
 ### Install individually
 
@@ -58,6 +61,10 @@ curl -o ~/.claude/commands/insait-test-csv.md \
 # Summarize
 curl -o ~/.claude/commands/summarize.md \
   https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/summarize.md
+
+# Feedback Browser
+curl -o ~/.claude/commands/feedback-browser.md \
+  https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/feedback-browser.md
 ```
 
 ---
@@ -100,3 +107,4 @@ Re-run the same `curl` command — it overwrites the local file. Then restart Cl
 3. Add a row to the right table in this README — include the invoke name, and a one-sentence description
 4. Add a `curl` install block under "Install individually"
 5. Open a PR — once merged, teammates can curl it down
+
