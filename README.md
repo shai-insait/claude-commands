@@ -23,6 +23,8 @@ curl -o ~/.claude/commands/summarize.md \
   https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/summarize.md
 curl -o ~/.claude/commands/feedback-browser.md \
   https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/feedback-browser.md
+curl -o ~/.claude/commands/html-email.md \
+  https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/feedback-browser.md
 
 # Skills
 mkdir -p ~/.claude/skills
@@ -64,6 +66,8 @@ curl -o ~/.claude/commands/summarize.md \
 
 # Feedback Browser
 curl -o ~/.claude/commands/feedback-browser.md \
+  https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/feedback-browser.md
+curl -o ~/.claude/commands/html-email.md \
   https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/feedback-browser.md
 ```
 
@@ -107,4 +111,3 @@ Re-run the same `curl` command — it overwrites the local file. Then restart Cl
 3. Add a row to the right table in this README — include the invoke name, and a one-sentence description
 4. Add a `curl` install block under "Install individually"
 5. Open a PR — once merged, teammates can curl it down
-
