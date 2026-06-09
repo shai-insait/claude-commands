@@ -10,6 +10,8 @@ Parse $ARGUMENTS:
 - If it's a description of an agent or flow: build a complete test CSV from scratch covering all scenarios.
 - If empty: explain the format and guidelines, then ask what the user needs.
 
+**Before building, always ask if chunk assertions are needed** (see section below). Do not include them by default.
+
 ---
 
 ## What You Are Building
@@ -20,7 +22,9 @@ This is NOT a Simulate Replay (those use a persona and cannot be CSV-imported). 
 
 ---
 
-## The Non-Negotiable CSV Rule: Exactly 18 Columns Per Row
+## Column Structure
+
+### Base format (always required) — 18 columns minimum
 
 ```
 Column A  = Test Name (unique, descriptive label)
@@ -31,56 +35,89 @@ Column Q  = Turn 16
 Column R  = Expected Outcome (what the agent should have achieved by the end)
 ```
 
-**Every row must have exactly 18 fields.** If a test uses fewer than 16 turns, pad the unused Turn columns with empty fields (just commas — no content). The Expected Outcome MUST land in column R (field 18).
+**Every row must have at least 18 fields.** If a test uses fewer than 16 turns, pad the unused Turn columns with empty fields. The Expected Outcome MUST land in column R (field 18).
 
 **The most common mistake:** Placing the Expected Outcome text directly after the last real turn without padding. This causes the outcome text to land in a Turn column instead of column R — it gets sent to the agent as a user message and evaluation is skipped.
 
-### Correct (15 turns, padded):
+### Correct (2 turns, padded):
 ```
-Test name,Turn1,Turn2,...,Turn15,,Expected Outcome text
+Test name,Turn1,Turn2,,,,,,,,,,,,,,Expected Outcome text
 ```
-                               ↑↑
-                   Empty Turn16 cell (1 comma = 1 empty field)
+(14 empty padding commas between Turn 2 and Expected Outcome)
 
-### Wrong (15 turns, no padding):
+### Wrong (2 turns, no padding):
 ```
-Test name,Turn1,Turn2,...,Turn15,Expected Outcome text
+Test name,Turn1,Turn2,Expected Outcome text
 ```
-(Expected Outcome lands in the Turn16 column — broken)
+(Expected Outcome lands in Turn 3 — broken)
 
-**To verify**: Open in Google Sheets. Check that the Expected Outcome text is in column R for EVERY row. If any row has the text in an earlier column, it needs padding commas.
+---
+
+## Chunk Assertions (Optional — KB Retrieval Checks)
+
+Chunk assertions let you verify that the agent retrieved specific articles from the knowledge base, not just that the answer was correct. They are added as extra columns after Expected Outcome.
+
+### When to use
+Only include chunk columns when the user explicitly requests retrieval-level testing. Do not add them by default. If not specified, ask: *"Do you want chunk assertions (KB article retrieval checks) included? If yes, provide the exact article filenames as they appear in the KB, including extension."*
+
+### Column format
+Chunk columns come after Expected Outcome (column R), starting at column S:
+
+```
+Column S = chunk_1
+Column T = chunk_2
+Column U = chunk_3
+... (add as many as needed)
+```
+
+### Value format
+Each chunk cell contains: `exact_filename_in_kb:chunk_index`
+
+- `exact_filename_in_kb` — the article name **exactly as it appears in the KB**, including extension (`.pdf`, `.md`, `.docx`, etc.). Case-sensitive. One wrong character = no match.
+- `chunk_index` — which chunk of that article (1 = first chunk, 2 = second, etc.). Use 1 if you want to assert the article was retrieved but don't care which chunk.
+
+**Examples:**
+```
+insurance_kb.pdf:1
+Summer Campaign — Recrawl Demo.md:2
+הפקת דוח הפקדות - חיים - 000007635.pdf:1
+```
+
+### Important rules
+- **Exact filenames are required.** If you don't have them, ask the user to export the KB file list and share it. Do not guess or approximate.
+- A row with no chunk assertions just has empty chunk columns (or omits them entirely).
+- Multiple chunks per test = multiple chunk columns (`chunk_1`, `chunk_2`, etc.).
+- Chunk assertions add a second pass of evaluation on top of the LLM judge (retrieval check + answer quality check).
+- Rows without chunk assertions do NOT need empty chunk columns — leave them out for those rows OR leave the cells empty.
+
+### Example with chunks:
+
+| name | message_1 | ... | expected_outcome | chunk_1 | chunk_2 |
+|------|-----------|-----|-----------------|---------|---------|
+| Q01 - loan eligibility | פוליסת מנהלים, מה הנחיות ההלוואה? | ... | Bot retrieves loan article and lists ineligibility conditions | בקשת הלוואה - חיים - 000002287.pdf:1 | |
+| Q02 - policy status | מה אומר סטטוס פ. תשלומים? | ... | Bot explains פיגור תשלומים | הסבר מסך גביה - 000002341.pdf:1 | |
 
 ---
 
 ## How to Write the Expected Outcome (Column R)
 
-The LLM Judge receives:
-1. All user questions in order (numbered list)
-2. Your Expected Outcome text
-3. The full conversation transcript
+The LLM Judge receives: the user questions, your Expected Outcome text, and the full conversation transcript.
 
-It evaluates:
-- Did the agent correctly handle each turn in the flow?
-- Did it maintain context across turns?
-- Does the final conversation state match the expected outcome?
-
-**Rules for writing expected outcomes:**
+**Rules:**
 
 | Do | Don't |
 |----|-------|
 | Describe the END STATE (what was accomplished) | Quote what the agent should say verbatim |
-| Name specific fields that were collected | Say "the agent responded helpfully" |
+| Name specific fields, values, or article names cited | Say "the agent responded helpfully" |
 | State which routing path/branch was taken | Use vague terms like "handled correctly" |
-| State what the agent did NOT do (for edge/negative cases) | Assume the judge knows your flow logic |
-| Be specific about data values and field names | Write a paragraph of prose |
+| State what the agent did NOT do (for negative cases) | Assume the judge knows your flow logic |
+| Be specific about data values | Write a paragraph of prose |
 
 **Good example:**
-> "Agent collected all 5 contact fields (first_name, last_name, phone, email, zip_code) and all 10 loan and vehicle fields. Credit score 520 was bucketed as 500-549. Agent routed to the DNQ node and the eCalc API was NOT called. Agent gave a warm non-judgmental message. No lead was submitted."
+> "Agent retrieves article 000002287. Lists ineligibility conditions including active disability claim, legal proceedings, and unpledged severance pay. Does NOT proceed to loan amount check without confirming conditions are clear first."
 
 **Bad example:**
-> "Agent handled the low credit score case appropriately and was polite."
-
-Leave Expected Outcome empty only if the test is purely checking whether the agent doesn't crash or freeze — not for any test where correctness matters.
+> "Agent handled the loan question correctly and was helpful."
 
 ---
 
@@ -89,16 +126,16 @@ Leave Expected Outcome empty only if the test is purely checking whether the age
 For any Conversation Flow Agent, build tests across these categories:
 
 1. **Happy path** — user provides all required information correctly, flow completes end-to-end
-2. **DNQ / disqualification** — user meets a condition that should route them away from the main flow
+2. **DNQ / disqualification** — user meets a condition that routes them away from the main flow
 3. **Borderline values** — values exactly at a threshold (test bucketing/routing logic)
 4. **Ambiguous input** — user gives vague or partial answer; agent must ask for clarification
-5. **Multi-field in one message** — user volunteers several pieces of info at once; agent must extract without re-asking
-6. **Abbreviated / non-standard format** — e.g. "18k" instead of "18000", "CA" instead of "California"
+5. **Multi-field in one message** — user volunteers several pieces of info at once
+6. **Abbreviated / non-standard format** — e.g. "18k" instead of "18000"
 7. **Off-topic digression** — user asks an unrelated question mid-flow; agent must answer and return
 8. **Invalid input then correction** — user gives wrong value, then correct value in next turn
-9. **Path switching** — user changes intent mid-flow (e.g. switches from one path to another)
-10. **Consent/gate edge cases** — decline, then accept; firm refusal; ask what it means
-11. **Greeting only / no intent** — user sends a vague opener; agent must present all options
+9. **Path switching** — user changes intent mid-flow
+10. **Consent/gate edge cases** — decline, then accept; firm refusal
+11. **Greeting only / no intent** — vague opener; agent must present options
 12. **Early exit** — user wants to stop before completing the flow
 13. **Language/phrasing variants** — formal vs casual, written-out numbers vs digits
 
@@ -110,14 +147,13 @@ For any Conversation Flow Agent, build tests across these categories:
 - Comma delimiter
 - Quote any field that contains a comma or newline: `"this, has a comma"`
 - Escape internal quotes by doubling: `"she said ""hello"""`
-- Include a header row (row 1): `Test Name,Turn 1,Turn 2,...,Turn 16,Expected Outcome`
-- Test names must be unique and human-readable (they appear in the UI)
-- Empty cells between the last real turn and Expected Outcome = padding (correct)
+- Header row (row 1): `Test Name,Turn 1,...,Turn 16,Expected Outcome` — add `chunk_1,chunk_2,...` if using chunks
+- Test names must be unique and human-readable
 - Max 10,000 rows before a UI warning appears
 
 ---
 
-## How Importing Works (What to Tell the User)
+## How Importing Works
 
 When uploading the CSV in the Insait Testing tab:
 1. Upload the CSV file
@@ -125,29 +161,30 @@ When uploading the CSV in the Insait Testing tab:
    - **Name Column → A**
    - **Message Start → B**
    - **Message End → Q**
-   - Find the "Expected Outcome Column" row — **check the "Include" checkbox** (small checkbox next to the label — it is OFF by default and easy to miss. If not checked, all expected outcomes are silently ignored regardless of CSV content)
+   - Find "Expected Outcome Column" — **check the "Include" checkbox** (OFF by default — easy to miss; if unchecked, all expected outcomes are silently ignored)
    - **Expected Outcome Column → R**
+   - If using chunk assertions: map `chunk_1` → S, `chunk_2` → T, etc.
 3. Row selection: **Skip header row** (row 1)
-4. Check the preview — if the Expected Outcome checkbox was checked correctly, a 4th column appears in the preview table showing the outcome text. If that column is missing or empty, the checkbox was not checked.
+4. Check the preview — if Expected Outcome checkbox was checked correctly, a 4th column appears in the preview table. If missing or empty, the checkbox was not checked.
 
-After import, all tests appear in a folder. Click **Run on the folder** (not individual tests) to execute all scenarios in one batch sequentially.
-
-**Critical UI note:** The "Include" checkbox for Expected Outcome is the most common reason expected outcomes don't appear after import. The CSV can be perfectly formatted and the outcomes will still not import if this checkbox is missed.
+After import, run the folder (not individual tests) to execute all scenarios in one batch.
 
 ---
 
 ## Validation Checklist
 
-Before outputting any CSV, verify every row:
+Before outputting any CSV, verify:
 
-- [ ] Exactly 18 fields (count by opening in Google Sheets — Expected Outcome in column R)
-- [ ] Rows with fewer than 16 turns have empty padding cells for unused Turn columns
+- [ ] Every row has at least 18 fields (Expected Outcome in column R)
+- [ ] Unused Turn columns between last real turn and column R are padded with empty cells
 - [ ] Expected Outcome is present for every test where correctness matters
-- [ ] Expected Outcome describes END STATE (not agent phrasing)
-- [ ] Fields containing commas are properly quoted
+- [ ] Expected Outcome describes END STATE, not agent phrasing
+- [ ] Fields containing commas or newlines are properly quoted
 - [ ] Test names are unique
 - [ ] Header row present as row 1
-- [ ] All 13 scenario categories covered (or justified why some don't apply to this agent)
+- [ ] If chunk assertions included: filenames are exact (asked user to confirm or provide KB file list)
+- [ ] If chunk assertions included: chunk columns appear after column R, not before
+- [ ] All 13 scenario categories covered (or justified why some don't apply)
 
 ---
 
@@ -155,5 +192,6 @@ Before outputting any CSV, verify every row:
 
 1. Read the file
 2. Count fields per row — flag any row where Expected Outcome is NOT in column R
-3. Check Expected Outcome quality for each row (end state, specific, names fields/paths)
-4. Output: a corrected CSV with all issues fixed, plus a summary of what was changed and why
+3. Check for chunk columns (S+) — if present, note them; if filenames look approximate rather than exact, flag for confirmation
+4. Check Expected Outcome quality (end state, specific, names fields/paths)
+5. Output: corrected CSV with all issues fixed, plus a summary of what was changed and why
