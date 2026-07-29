@@ -24,11 +24,14 @@ curl -o ~/.claude/commands/summarize.md \
 curl -o ~/.claude/commands/feedback-browser.md \
   https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/feedback-browser.md
 curl -o ~/.claude/commands/html-email.md \
-  https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/feedback-browser.md
+  https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/html-email.md
 curl -o ~/.claude/commands/session-start.md \
   https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/session-start.md
 curl -o ~/.claude/commands/eod.md \
   https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/eod.md
+
+curl -o ~/.claude/commands/kb-char-count.md \
+  https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/kb-char-count.md
 
 # Skills
 mkdir -p ~/.claude/skills
@@ -52,6 +55,8 @@ Commands go in `~/.claude/commands/`. Invoke with `/command-name`.
 | INSAIT Test CSV | `/insait-test-csv` | Build or validate a Strict Replay test CSV for the INSAIT platform. Pass a file path to review, or describe the agent to generate test cases. |
 | Summarize | `/summarize` | Summarize the last N assistant messages in a session. Usage: `/summarize 5` or `/summarize 3 voice agent rules`. |
 | Feedback Browser | `/feedback-browser` | Build a filterable, expandable single-file HTML conversation browser from a pilot/QA feedback file (scores + rep feedback + QA comments + full transcripts). Usage: `/feedback-browser matched.md [analysis.md] [output.html]`. |
+| HTML Email | `/html-email` | Compose and send a formatted HTML email via Gmail (colored sections, cards, tables, RTL Hebrew). Drafts by default; add `--send` to send. Usage: `/html-email <recipient> <subject> [--send]`. |
+| KB Char Count | `/kb-char-count` | Count characters in every article across one or more KB export directories: per-article table sorted by size, plus per-KB totals and averages. Usage: `/kb-char-count <kb-dir> [kb-dir2] ...`. |
 | Session Start | `/session-start` | Start-of-session briefing for a project: reads the latest project memory, Linear status update, and Slack channel, then summarizes where things stand plus a suggested focus. Usage: `/session-start hyp`. |
 | End of Day | `/eod` | End-of-day wrap for a project: updates project memory, posts a dated Linear status update with a health flag, then drafts the daily update in the project's Slack channel (draft only). Usage: `/eod hyp`. |
 
@@ -74,7 +79,7 @@ curl -o ~/.claude/commands/summarize.md \
 curl -o ~/.claude/commands/feedback-browser.md \
   https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/feedback-browser.md
 curl -o ~/.claude/commands/html-email.md \
-  https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/feedback-browser.md
+  https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/html-email.md
 
 # Session Start
 curl -o ~/.claude/commands/session-start.md \
@@ -83,6 +88,10 @@ curl -o ~/.claude/commands/session-start.md \
 # End of Day
 curl -o ~/.claude/commands/eod.md \
   https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/eod.md
+
+# KB Char Count
+curl -o ~/.claude/commands/kb-char-count.md \
+  https://raw.githubusercontent.com/shai-insait/claude-commands/main/.claude/commands/kb-char-count.md
 ```
 
 ---
